@@ -1,0 +1,10 @@
+﻿D:\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(514,5): warning MSB8028: The intermediate directory (x64\Release\) contains files shared from another project (Test.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  Main.cpp
+E:\C++ files\Test\Main.cpp(48,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+E:\C++ files\Test\Main.cpp(61,43): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
+  Generating code
+  Previous IPDB not found, fall back to full compilation.
+E:\C++ files\Test\Main.cpp(32): warning C4172: returning address of local variable or temporary: matchedPoint
+  All 182 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Test.vcxproj -> E:\C++ files\Test\x64\Release\DepthIndicator.exe
