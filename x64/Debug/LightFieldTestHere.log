@@ -1,0 +1,5 @@
+﻿  Main.cpp
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(24,22): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(25,23): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(57,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  LightFieldTestHere.vcxproj -> D:\Vs2022\LightFieldTestHere\LightFieldTestHere\x64\Debug\LightFieldTestHere.exe

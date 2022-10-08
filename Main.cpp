@@ -2,102 +2,82 @@
 #include <opencv2/opencv.hpp> 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
-#include <stdio.h>
-#include <vector>
-#include <math.h>
+#include<stdio.h>
+#include"stereoMatching.h"
+
 using namespace cv;
-using namespace std;
 
-// [bias] basically is the focal * baseline, check the principle for generating depth map from stereo image.
-int bias = 10000;
-// [patchSize] indicates the single unit of stereo matching, e.g patchSize = 2 means check 2x2 rectangle.
-int patchSize = 2;
-// [leftGrayScale] & [rightGrayScale] are 2d arrays store Grayscale data for left and right.
-vector< vector<int> > leftGrayScale;
-vector< vector<int> > rightGrayScale;
+int main() {
+	String inputName = "Sculpture";
 
-// [stereoMatching] is a function that takes input as leftPatch and generate the rightPatch that matches with it.
-int* stereoMatching(int li, int lr) {
-    int matchedPoint[3];
-    int mininum = 999;
-    for (int i = 0;i < rightGrayScale[li].size();i++) {
-        int d = abs(leftGrayScale[li][lr] - rightGrayScale[li][i]);
-        if (d < mininum) {
-            mininum = d;
-            matchedPoint[0] = li;
-            matchedPoint[1] = i;
-            matchedPoint[2] = mininum;
-        }
-    }
-    return matchedPoint;
-}
+	Mat Left = imread(inputName + "/left.png");
+	Mat Right = imread(inputName + "/right.png");
 
-// Main
-int main()
-{
-    Mat image = cv::imread("./stereoImage.png");
-    Mat left = image(Range(0,image.rows),Range(0,image.cols/2));
-    Mat right = image(Range(0,image.rows),Range(image.cols / 2, image.cols));
+	vector<vector<int>> LeftGrayScale;
+	vector<vector<int>> RightGrayScale;
 
-    for (int i = 0; i < left.rows; i = i + patchSize) {
-        leftGrayScale.push_back(vector<int>());
-        for (int j = 0; j < left.cols; j = j + 1) {
-            int grayScale = 0;
-            for (int k = 0;k < patchSize&&i+k<left.rows;k++) {
-                for (int u = 0;u < patchSize&&j+u<left.cols;u++) {
-                    grayScale = grayScale + (left.at<Vec3b>(i + k, j + u)[2]*0.299+ left.at<Vec3b>(i + k, j + u)[1]*0.387+ left.at<Vec3b>(i + k, j + u)[0]*0.114);
-                }
-            }
-            leftGrayScale[leftGrayScale.size()-1].push_back(grayScale / (patchSize * patchSize * 3));
-        }
-    } 
+	for (int width = 0; width < Left.cols; width++) {
+		LeftGrayScale.push_back(vector<int>());
+		RightGrayScale.push_back(vector<int>());
+		for (int height = 0; height < Left.rows; height++) 
+		{
+			int leftGrayScale = Left.at<Vec3b>(height, width)[2] * 0.299 + Left.at<Vec3b>(height, width)[1] * 0.387 + Left.at<Vec3b>(height, width)[0] * 0.114;
+			int rightGrayScale = Right.at<Vec3b>(height, width)[2] * 0.299 + Right.at<Vec3b>(height, width)[1] * 0.387 + Right.at<Vec3b>(height, width)[0] * 0.114;
+			LeftGrayScale[width].push_back(leftGrayScale);
+			RightGrayScale[width].push_back(rightGrayScale);
+		}
+	}
 
-    for (int i = 0; i < right.rows; i = i + patchSize) {
-        rightGrayScale.push_back(vector<int>());
-        for (int j = 0; j < right.cols; j = j + 1) {
-            int grayScale = 0;
-            for (int k = 0;k < patchSize && i + k < right.rows;k++) {
-                for (int u = 0;u < patchSize && j+u<right.cols;u++) {
-                    grayScale = grayScale + (right.at<Vec3b>(i + k, j + u)[2] * 0.299 + right.at<Vec3b>(i + k, j + u)[1] * 0.387 + right.at<Vec3b>(i + k, j + u)[0] * 0.114);
-                }
-            }
-            rightGrayScale[rightGrayScale.size() - 1].push_back(grayScale / (patchSize * patchSize * 3));
-        }
-    }
+	stereoMatching sM;
+	sM.inputGrayScale(LeftGrayScale, RightGrayScale);
+	sM.setPatchSize(10);
+	sM.matchMethod(1);
+	sM.setWeightOfDis(0);
+	sM.setBiasOfMinDis(0);
 
+	//DEBUGING PART
+	vector<Vec2i> disparityDataCloud;
+	for (int i = 0; i < LeftGrayScale.size(); i++) {
+		for (int j = 0; j < LeftGrayScale[0].size(); j++) {
+			disparityDataCloud.push_back(Vec2i());
+		}
+	}
 
-    int leftPatch[2];
-    leftPatch[0] = 0;
-    leftPatch[1] = 0;
+	//RENDERING PART
+	int totalDis = 0;
+	Mat depthMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
+	for (int width = 0; width < Left.cols; width++) {
+		for (int height = 0; height < Left.rows; height++) {
+			int Z = width - sM.match(width, height);
+			depthMap.at<Vec3b>(height, width)[0] = Z;
+			depthMap.at<Vec3b>(height, width)[1] = Z;
+			depthMap.at<Vec3b>(height, width)[2] = Z;
+			totalDis = totalDis + Z;
+		}
+	}
+	float averageDis = (float)totalDis / (float)(Left.cols * Left.rows);
+	float a = 0;
+	a = (float)128 / (float)(averageDis);
+	for (int width = 0; width < Left.cols; width++) {
+		for (int height = 0; height < Left.rows; height++) {
+			int Z = depthMap.at<Vec3b>(height, width)[0] * a;
+			if (Z > 255) {
+				Z = 255;
+			}
+			depthMap.at<Vec3b>(height, width)[0] = Z;
+			depthMap.at<Vec3b>(height, width)[1] = Z;
+			depthMap.at<Vec3b>(height, width)[2] = Z;
+		}
+	}
 
-    int rightPatch[2];
-    rightPatch[0] = 0;
-    rightPatch[1] = 0;
+	applyColorMap(depthMap, depthMap, COLORMAP_PLASMA);
+	imshow("result", depthMap);
 
-    Mat depthMap = Mat(image.rows, image.cols/2, CV_8UC3,Scalar(0,0,0));
+	std::ostringstream oss;
+	oss <<  "Result/" << inputName << " METHOD=" << sM.matchingMethod << " PATCHSIZE=" << sM.patchSize << " WEIGHTOFDIS=" << sM.weightOfDis << "BIASOFMINDIS=" << sM.biasOfMinDis << ".png";
+	std::string filePath = oss.str();
+	
+	imwrite(filePath, depthMap);
 
-    for (int i = 0;i < depthMap.rows-patchSize;i=i+patchSize) {
-        leftPatch[1] = i;
-        for (int j = 0;j < depthMap.cols;j++) {
-            leftPatch[0] = j;
-            rightPatch[0]= stereoMatching(leftPatch[1] / patchSize, leftPatch[0])[1];
-            rightPatch[1] = leftPatch[1];
-            int Z = (bias / (abs(leftPatch[0] - rightPatch[0])+1));
-            if (Z > 255) {
-                Z = 255;
-            }
-            depthMap.at<Vec3b>(i,j)[0]= Z;
-            depthMap.at<Vec3b>(i,j)[1]= Z;
-            depthMap.at<Vec3b>(i,j)[2]= Z;
-            for (int k = 0;k < patchSize;k++) {
-                depthMap.at<Vec3b>(i+k, j)[0] = Z;
-                depthMap.at<Vec3b>(i+k, j)[1] = Z;
-                depthMap.at<Vec3b>(i+k, j)[2] = Z;
-            }
-        }
-    }
-
-    imshow("result", depthMap);
-
-    waitKey(0);
+	waitKey();
 }
