@@ -1,167 +1,188 @@
-#include <opencv2/core.hpp>
-#include <opencv2/opencv.hpp> 
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
+#include<opencv2/core.hpp>
+#include<opencv2/opencv.hpp> 
+#include<opencv2/imgcodecs.hpp>
+#include<opencv2/highgui.hpp>
 #include<stdio.h>
 #include"stereoMatching.h"
 
 using namespace cv;
 
-int main() {
+Mat Left;
+Mat Right;
+Mat depthMap;
+
+int main(int a) {
+	String inputName = "Sculpture";
 	int method = 3;
-	int detailLevel = 6;
-	String inputName = "Tardis";
+	int detailLevel = 4;
+	/*
+	vector<String> checkList;
+	checkList.push_back("Adirondack");
+	checkList.push_back("Backpack");
+	checkList.push_back("Bicycle");
+	checkList.push_back("Bridge");
+	checkList.push_back("Cable");
+	checkList.push_back("Minecraft");
+	checkList.push_back("Pipes");
+	checkList.push_back("Sculpture");
+	checkList.push_back("Tardis");
+	checkList.push_back("Umbrella");
+	checkList.push_back("Vintage");
+	for (int checkNum = 0; checkNum < checkList.size(); checkNum++) {
+		inputName = checkList[checkNum];
+		**/
+		printf("%s\n",inputName.c_str());
 
-	Mat Left = imread(inputName + "/left.png");
-	Mat Right = imread(inputName + "/right.png");
+		Left = imread("StereoImageDataset/" + inputName + "/left.png");
+		Right = imread("StereoImageDataset/" + inputName + "/right.png");
 
-	vector<vector<int>> LeftGrayScale;
-	vector<vector<int>> RightGrayScale;
+		vector<vector<int>> LeftGrayScale;
+		vector<vector<int>> RightGrayScale;
 
-	int totalDis = 0;
-	Mat depthMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
-
-	for (int width = 0; width < Left.cols; width++) {
-		LeftGrayScale.push_back(vector<int>());
-		RightGrayScale.push_back(vector<int>());
-		for (int height = 0; height < Left.rows; height++) 
-		{
-			int leftGrayScale = Left.at<Vec3b>(height, width)[2] * 0.299 + Left.at<Vec3b>(height, width)[1] * 0.387 + Left.at<Vec3b>(height, width)[0] * 0.114;
-			int rightGrayScale = Right.at<Vec3b>(height, width)[2] * 0.299 + Right.at<Vec3b>(height, width)[1] * 0.387 + Right.at<Vec3b>(height, width)[0] * 0.114;
-			LeftGrayScale[width].push_back(leftGrayScale);
-			RightGrayScale[width].push_back(rightGrayScale);
-		}
-	}
-
-	std::ostringstream oss;
-	if (method == 1) {
-		stereoMatching sM;
-		sM.inputGrayScale(LeftGrayScale, RightGrayScale);
-		sM.setPatchSize(10);
-		sM.matchMethod(1);
-		sM.setWeightOfDis(0);
-		sM.setBiasOfMinDis(0);
+		int totalDis = 0;
+		depthMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
 
 		for (int width = 0; width < Left.cols; width++) {
-			for (int height = 0; height < Left.rows; height++) {
-				int Z = width - sM.match(width, height);
-				depthMap.at<Vec3b>(height, width)[0] = Z;
-				depthMap.at<Vec3b>(height, width)[1] = Z;
-				depthMap.at<Vec3b>(height, width)[2] = Z;
-				totalDis = totalDis + Z;
+			LeftGrayScale.push_back(vector<int>());
+			RightGrayScale.push_back(vector<int>());
+			for (int height = 0; height < Left.rows; height++)
+			{
+				int leftGrayScale = Left.at<Vec3b>(height, width)[2] * 0.299 + Left.at<Vec3b>(height, width)[1] * 0.387 + Left.at<Vec3b>(height, width)[0] * 0.114;
+				int rightGrayScale = Right.at<Vec3b>(height, width)[2] * 0.299 + Right.at<Vec3b>(height, width)[1] * 0.387 + Right.at<Vec3b>(height, width)[0] * 0.114;
+				LeftGrayScale[width].push_back(leftGrayScale);
+				RightGrayScale[width].push_back(rightGrayScale);
 			}
 		}
 
-		oss <<  "Result/" << inputName << " METHOD=" << sM.matchingMethod << " PATCHSIZE=" << sM.patchSize << " WEIGHTOFDIS=" << sM.weightOfDis << "BIASOFMINDIS=" << sM.biasOfMinDis << ".png";
-	}
+		std::ostringstream oss;
+		if (method == 1) {
+			stereoMatching sM;
+			sM.inputGrayScale(LeftGrayScale, RightGrayScale);
+			sM.setPatchSize(10);
+			sM.setGraySumMethod(2);
+			sM.matchMethod(1);
 
-	else if (method == 3) {
-		stereoMatching sM;
-		sM.inputGrayScale(LeftGrayScale, RightGrayScale);
-		sM.setPatchSize(10);
-		sM.matchMethod(1);
-		sM.setWeightOfDis(0);
-		sM.setBiasOfMinDis(0);
+			for (int width = 0; width < Left.cols; width++) {
+				for (int height = 0; height < Left.rows; height++) {
+					int Z = width - sM.match(width, height);
+					depthMap.at<Vec3b>(height, width)[0] = Z;
+					depthMap.at<Vec3b>(height, width)[1] = Z;
+					depthMap.at<Vec3b>(height, width)[2] = Z;
+					totalDis = totalDis + Z;
+				}
+			}
 
-		stereoMatching outputsM;
-		outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
-		outputsM.setPatchSize(2);
-		outputsM.matchMethod(3);
-		outputsM.setWeightOfDis(0.5);
-		outputsM.setBiasOfMinDis(0);
+			oss << "Result/" << inputName << "/Mode=GCP" << " pS=" << sM.patchSize << " gSM=" << sM.graySumMethod << ".png";
+		}
 
-		for (int height = 0; height < Left.rows; height++) {
+		else if (method == 3) {
+			stereoMatching sM;
+			sM.inputGrayScale(LeftGrayScale, RightGrayScale);
+			sM.setPatchSize(10);
+			sM.matchMethod(1);
+			sM.setGraySumMethod(3);
+
+			stereoMatching outputsM;
+			outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
+			outputsM.setPatchSize(2);
+			outputsM.matchMethod(3);
+			outputsM.setGraySumMethod(2);
+			outputsM.setWeightOfDis(1.5);
+
+			for (int height = 0; height < Left.rows; height++) {
+
+				vector<Vec2i> disparityArray;
+				for (int width = 0; width < Left.cols; width++) {
+					int Z = width - sM.match(width, height);
+					bool ifDisExists = false;
+					for (int i = 0; i < disparityArray.size(); i++) {
+						if (Z == disparityArray[i][0]) {
+							disparityArray[i][1]++;
+							ifDisExists = true;
+							break;
+						}
+					}
+					if (!ifDisExists) {
+						disparityArray.push_back(Vec2i(Z, 0));
+					}
+				}
+
+
+				vector<int> majorDis;
+				for (int i = 0; i < detailLevel; i++) {
+					int largest = 0;
+					int largestIndex = 0;
+					for (int j = 0; j < disparityArray.size(); j++) {
+						if (disparityArray[j][1] > largest) {
+							largest = disparityArray[j][1];
+							largestIndex = j;
+						}
+					}
+					majorDis.push_back(disparityArray[largestIndex][0]);
+					disparityArray.erase(disparityArray.begin() + largestIndex);
+				}
+
+				outputsM.setMajorDis(majorDis);
+
+				for (int width = 0; width < Left.cols; width++) {
+					int Z = width - outputsM.match(width, height);
+					depthMap.at<Vec3b>(height, width)[0] = Z;
+					depthMap.at<Vec3b>(height, width)[1] = Z;
+					depthMap.at<Vec3b>(height, width)[2] = Z;
+					totalDis = totalDis + Z;
+				}
+			}
+
+			oss << "Result/" << inputName << "/Mode=ADM" << " pS1=" << sM.patchSize << " pS2=" << outputsM.patchSize << " wt=" << outputsM.weightOfDis << " dtL=" << detailLevel << " gSM1=" << sM.graySumMethod << " gSM2=" << outputsM.graySumMethod << ".png";
+		}
+
+
+		//RENDERING
+		float averageDis = (float)totalDis / (float)(Left.cols * Left.rows);
+		float a = 0;
+		a = (float)128 / (float)(averageDis);
+		for (int width = 0; width < Left.cols; width++) {
+			for (int height = 0; height < Left.rows; height++) {
+				int Z = depthMap.at<Vec3b>(height, width)[0] * a;
+				if (Z > 255) {
+					Z = 255;
+				}
+				depthMap.at<Vec3b>(height, width)[0] = Z;
+				depthMap.at<Vec3b>(height, width)[1] = Z;
+				depthMap.at<Vec3b>(height, width)[2] = Z;
+			}
+		}
+
+		applyColorMap(depthMap, depthMap, COLORMAP_PLASMA);
+		medianBlur(depthMap, depthMap, 5);
+
+		imshow("result", depthMap);
+
+		std::string filePath = oss.str();
+
+		imwrite(filePath, depthMap);
+
+		/*
+			//DEBUGING PART
+			//vector<vector<Vec2i>> disparityDataCloud;
+			//for (int j = 0; j < LeftGrayScale[0].size(); j++) {
+			//	disparityDataCloud.push_back(vector<Vec2i>());
+
+			stereoMatching sM;
+			sM.inputGrayScale(LeftGrayScale, RightGrayScale);
+			sM.setPatchSize(10);
+			sM.matchMethod(1);
+			sM.setWeightOfDis(0);
+			sM.setBiasOfMinDis(0);
+
+			/*stereoMatching outputsM;
+			outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
+			outputsM.setPatchSize(2);
+			outputsM.matchMethod(3);
+			outputsM.setWeightOfDis(0.5);
+			outputsM.setBiasOfMinDis(0);
 
 			vector<Vec2i> disparityArray;
-			for (int width = 0; width < Left.cols; width++) {
-				int Z = width - sM.match(width, height);
-				bool ifDisExists = false;
-				for (int i = 0; i < disparityArray.size(); i++) {
-					if (Z == disparityArray[i][0]) {
-						disparityArray[i][1]++;
-						ifDisExists = true;
-						break;
-					}
-				}
-				if (!ifDisExists) {
-					disparityArray.push_back(Vec2i(Z, 0));
-				}
-			}
-
-
-			vector<int> majorDis;
-			for (int i = 0; i < detailLevel; i++) {
-				int largest = 0;
-				int largestIndex = 0;
-				for (int j = 0; j < disparityArray.size(); j++) {
-					if (disparityArray[j][1] > largest) {
-						largest = disparityArray[j][1];
-						largestIndex = j;
-					}
-				}
-				majorDis.push_back(disparityArray[largestIndex][0]);
-				disparityArray.erase(disparityArray.begin() + largestIndex);
-			}
-
-			outputsM.setMajorDis(majorDis);
-
-			for (int width = 0; width < Left.cols; width++) {
-				int Z = width - outputsM.match(width, height);
-				depthMap.at<Vec3b>(height, width)[0] = Z;
-				depthMap.at<Vec3b>(height, width)[1] = Z;
-				depthMap.at<Vec3b>(height, width)[2] = Z;
-				totalDis = totalDis + Z;
-			}
-		}
-
-		oss << "Result/" << inputName << " METHOD=" << outputsM.matchingMethod << " PATCHSIZE=" << outputsM.patchSize << " WEIGHTOFDIS=" << outputsM.weightOfDis << "DETAILLEVEL=" << detailLevel << ".png";
-	}
-	
-
-	//RENDERING
-	float averageDis = (float)totalDis / (float)(Left.cols * Left.rows);
-	float a = 0;
-	a = (float)128 / (float)(averageDis);
-	for (int width = 0; width < Left.cols; width++) {
-		for (int height = 0; height < Left.rows; height++) {
-			int Z = depthMap.at<Vec3b>(height, width)[0] * a;
-			if (Z > 255) {
-				Z = 255;
-			}
-			depthMap.at<Vec3b>(height, width)[0] = Z;
-			depthMap.at<Vec3b>(height, width)[1] = Z;
-			depthMap.at<Vec3b>(height, width)[2] = Z;
-		}
-	}
-
-	applyColorMap(depthMap, depthMap, COLORMAP_PLASMA);
-	imshow("result", depthMap);
-
-	std::string filePath = oss.str();
-
-	imwrite(filePath, depthMap);
-
-/*
-	//DEBUGING PART
-	//vector<vector<Vec2i>> disparityDataCloud;
-	//for (int j = 0; j < LeftGrayScale[0].size(); j++) {
-	//	disparityDataCloud.push_back(vector<Vec2i>());
-
-	stereoMatching sM;
-	sM.inputGrayScale(LeftGrayScale, RightGrayScale);
-	sM.setPatchSize(10);
-	sM.matchMethod(1);
-	sM.setWeightOfDis(0);
-	sM.setBiasOfMinDis(0);
-
-	/*stereoMatching outputsM;
-	outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
-	outputsM.setPatchSize(2);
-	outputsM.matchMethod(3);
-	outputsM.setWeightOfDis(0.5);
-	outputsM.setBiasOfMinDis(0);*/
-
-			/*vector<Vec2i> disparityArray;
 			for (int width = 0; width < Left.cols; width++) {
 				int Z = width - sM.match(width, 275);
 				bool ifDisExists = false;
@@ -270,7 +291,7 @@ int main() {
 		cv::flip(result, result, 0);
 		imshow("result", result);
 		*/
-	
+	//}
 
 
 	

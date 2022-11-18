@@ -15,11 +15,13 @@ private:
 
 public:
 	int patchSize;
+	int graySumMethod;
 	int matchingMethod;
 	float weightOfDis;
 	float biasOfMinDis;
 	vector<int> majorDis;
 	void setPatchSize(int inputPatchSize);
+	void setGraySumMethod(int inputgraySumMethod);
 	void setWeightOfDis(float inputWeightOfDis);
 	void setBiasOfMinDis(float inputBiasOfMinDis);
 	void setMajorDis(vector<int> inputMajorDis);

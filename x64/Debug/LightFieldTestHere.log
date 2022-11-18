@@ -1,14 +1,5 @@
-﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(534,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (LightFieldTestHere.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  Main.cpp
-D:\Vs2022\depthMap_Estimator\Main.cpp(29,22): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-D:\Vs2022\depthMap_Estimator\Main.cpp(30,23): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-D:\Vs2022\depthMap_Estimator\Main.cpp(127,10): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
-  stereoMatching.cpp
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(56,18): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(83,36): warning C4305: 'initializing': truncation from 'int' to 'float'
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(104,21): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(145,31): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(151,18): warning C4244: '=': conversion from 'double' to 'int', possible loss of data
-  Generating Code...
-D:\Vs2022\depthMap_Estimator\stereoMatching.cpp(164): warning C4715: 'stereoMatching::match': not all control paths return a value
-  LightFieldTestHere.vcxproj -> D:\Vs2022\depthMap_Estimator\x64\Debug\depthEstimator_Experimental.exe
+﻿  Main.cpp
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(50,23): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(51,24): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(142,13): error C2082: redefinition of formal parameter 'a'
+D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(143,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data
