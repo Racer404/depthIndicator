@@ -1,5 +1,0 @@
-﻿  Main.cpp
-D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(50,23): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(51,24): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
-D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(142,13): error C2082: redefinition of formal parameter 'a'
-D:\Vs2022\LightFieldTestHere\LightFieldTestHere\Main.cpp(143,18): warning C4244: '=': conversion from 'float' to 'int', possible loss of data

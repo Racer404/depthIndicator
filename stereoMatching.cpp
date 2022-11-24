@@ -16,7 +16,7 @@ void stereoMatching::setBiasOfMinDis(float inputBiasOfMinDis) {
 	biasOfMinDis = inputBiasOfMinDis;
 }
 
-void stereoMatching::setMajorDis(vector<int> inputMajorDis) {
+void stereoMatching::setMajorDis(vector<vector<int>> inputMajorDis) {
 	majorDis = inputMajorDis;
 }
 
@@ -33,7 +33,7 @@ void stereoMatching::matchMethod(int methodIndex) {
 //	return Vec2f(1,2);
 //}
 
-int stereoMatching::match(int xPixel, int yPixel) {
+vector<int> stereoMatching::match(int xPixel, int yPixel) {
 	if (matchingMethod == 1) {
 		float lowestDifference = 9999999;
 		int indexOfLowestDifference = 0;
@@ -84,7 +84,8 @@ int stereoMatching::match(int xPixel, int yPixel) {
 					}
 				}
 
-				int difference = abs(target - sample)+ abs(weightOfDis * abs(xPixel - i) - biasOfMinDis);
+				//int difference = abs(target - sample)+ abs(weightOfDis * abs(xPixel - i) - biasOfMinDis);
+				int difference = abs(target - sample);
 
 				if (difference < lowestDifference) {
 					lowestDifference = difference;
@@ -123,7 +124,10 @@ int stereoMatching::match(int xPixel, int yPixel) {
 			}
 		}
 		
-		return indexOfLowestDifference;
+		vector<int> resultVector;
+		resultVector.push_back(indexOfLowestDifference);
+		resultVector.push_back(lowestDifference);
+		return resultVector;
 	}
 
 
@@ -166,7 +170,10 @@ int stereoMatching::match(int xPixel, int yPixel) {
 				indexOfLowestDifference = i;
 			}
 		}
-		return indexOfLowestDifference;
+		vector<int> resultVector;
+		resultVector.push_back(indexOfLowestDifference);
+		resultVector.push_back(lowestDifference);
+		return resultVector;
 	}
 	//OUTDATED!!!OUTDATED!!!OUTDATED!!!OUTDATED!!!
 
@@ -199,11 +206,15 @@ int stereoMatching::match(int xPixel, int yPixel) {
 					}
 				}
 
-				float denominator = 0;
-
-				for (int majorNum = 0; majorNum < majorDis.size(); majorNum++) {
-					denominator = denominator + (1 / (abs((xPixel - i) - majorDis[majorNum]) + 0.0001));
+				float globalCost = 0;
+				for (int iterations = 0; iterations < majorDis.size(); iterations++) {
+					float denominator = 0;
+					for (int j = 0; j < majorDis[0].size(); j++) {
+						denominator = abs((float)1 / (float)(xPixel - i - majorDis[iterations][j])) + denominator;
+					}
+					globalCost = globalCost + ((float)1 / denominator);
 				}
+				globalCost = ((float)1 / (float)majorDis.size()) * globalCost;
 
 				if (target.size() <= sample.size()) {
 					int cost = 0;
@@ -211,7 +222,7 @@ int stereoMatching::match(int xPixel, int yPixel) {
 						cost = cost + pow((sample[k] - target[k]), 2);
 					}
 
-					float difference = cost + weightOfDis / denominator;
+					float difference = cost + weightOfDis * globalCost;
 
 					if (difference < lowestDifference) {
 						lowestDifference = difference;
@@ -236,13 +247,17 @@ int stereoMatching::match(int xPixel, int yPixel) {
 					}
 				}
 
-				float denominator = 0;
-
-				for (int majorNum = 0; majorNum < majorDis.size(); majorNum++) {
-					denominator = denominator + (1 / (abs((xPixel - i) - majorDis[majorNum]) + 0.0001));
+				float globalCost = 0;
+				for (int iterations = 0; iterations < majorDis.size(); iterations++) {
+					float denominator = 0;
+					for (int j = 0; j < majorDis[0].size(); j++) {
+						denominator = abs((float)1 / (float)(xPixel - i - majorDis[iterations][j])) + denominator;
+					}
+					globalCost = globalCost + ((float)1 / denominator);
 				}
+				globalCost = ((float)1 / (float)majorDis.size()) * globalCost;
 
-				int difference = abs(target - sample)+ weightOfDis / denominator;
+				int difference = abs(target - sample)+ weightOfDis * globalCost;
 
 				if (difference < lowestDifference) {
 					lowestDifference = difference;
@@ -267,11 +282,15 @@ int stereoMatching::match(int xPixel, int yPixel) {
 					}
 				}
 
-				float denominator = 0;
-
-				for (int majorNum = 0; majorNum < majorDis.size(); majorNum++) {
-					denominator = denominator + (1 / (abs((xPixel - i) - majorDis[majorNum]) + 0.0001));
+				float globalCost = 0;
+				for (int iterations = 0; iterations < majorDis.size(); iterations++) {
+					float denominator = 0;
+					for (int j = 0; j < majorDis[0].size(); j++) {
+						denominator = abs((float)1 / (float)(xPixel - i - majorDis[iterations][j])) + denominator;
+					}
+					globalCost = globalCost + ((float)1 / denominator);
 				}
+				globalCost = ((float)1 / (float)majorDis.size()) * globalCost;
 
 				if (target.size() <= sample.size()) {
 					int cost = 0;
@@ -279,7 +298,7 @@ int stereoMatching::match(int xPixel, int yPixel) {
 						cost = cost + abs(sample[k] - target[k]);
 					}
 
-					float difference = cost + weightOfDis / denominator;
+					float difference = cost + weightOfDis * globalCost;
 
 					if (difference < lowestDifference) {
 						lowestDifference = difference;
@@ -288,6 +307,9 @@ int stereoMatching::match(int xPixel, int yPixel) {
 				}
 			}
 		}
-		return indexOfLowestDifference;
+		vector<int> resultVector;
+		resultVector.push_back(indexOfLowestDifference);
+		resultVector.push_back(lowestDifference);
+		return resultVector;
 	}
 }

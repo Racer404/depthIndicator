@@ -10,10 +10,11 @@ using namespace cv;
 Mat Left;
 Mat Right;
 Mat depthMap;
+Mat costMap;
 
-int main(int a) {
+int main() {
 	String inputName = "Sculpture";
-	int method = 3;
+	int method = 1;
 	int detailLevel = 4;
 	/*
 	vector<String> checkList;
@@ -40,7 +41,9 @@ int main(int a) {
 		vector<vector<int>> RightGrayScale;
 
 		int totalDis = 0;
+		int totalCost = 0;
 		depthMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
+		costMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
 
 		for (int width = 0; width < Left.cols; width++) {
 			LeftGrayScale.push_back(vector<int>());
@@ -59,16 +62,24 @@ int main(int a) {
 			stereoMatching sM;
 			sM.inputGrayScale(LeftGrayScale, RightGrayScale);
 			sM.setPatchSize(10);
-			sM.setGraySumMethod(2);
+			sM.setGraySumMethod(3);
 			sM.matchMethod(1);
 
 			for (int width = 0; width < Left.cols; width++) {
 				for (int height = 0; height < Left.rows; height++) {
-					int Z = width - sM.match(width, height);
+					vector<int> p = sM.match(width, height);
+					int Z = width - p[0];
 					depthMap.at<Vec3b>(height, width)[0] = Z;
 					depthMap.at<Vec3b>(height, width)[1] = Z;
 					depthMap.at<Vec3b>(height, width)[2] = Z;
+
+					int C = p[1];
+					costMap.at<Vec3b>(height, width)[0] = C;
+					costMap.at<Vec3b>(height, width)[1] = C;
+					costMap.at<Vec3b>(height, width)[2] = C;
+
 					totalDis = totalDis + Z;
+					totalCost = totalCost + C;
 				}
 			}
 
@@ -86,14 +97,14 @@ int main(int a) {
 			outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
 			outputsM.setPatchSize(2);
 			outputsM.matchMethod(3);
-			outputsM.setGraySumMethod(2);
-			outputsM.setWeightOfDis(1.5);
+			outputsM.setGraySumMethod(3);
+			outputsM.setWeightOfDis(0.5);
 
 			for (int height = 0; height < Left.rows; height++) {
 
 				vector<Vec2i> disparityArray;
 				for (int width = 0; width < Left.cols; width++) {
-					int Z = width - sM.match(width, height);
+					int Z = width - sM.match(width, height)[0];
 					bool ifDisExists = false;
 					for (int i = 0; i < disparityArray.size(); i++) {
 						if (Z == disparityArray[i][0]) {
@@ -108,7 +119,8 @@ int main(int a) {
 				}
 
 
-				vector<int> majorDis;
+				vector<vector<int>> majorDis;
+				majorDis.push_back(vector<int>());
 				for (int i = 0; i < detailLevel; i++) {
 					int largest = 0;
 					int largestIndex = 0;
@@ -118,14 +130,14 @@ int main(int a) {
 							largestIndex = j;
 						}
 					}
-					majorDis.push_back(disparityArray[largestIndex][0]);
+					majorDis[0].push_back(disparityArray[largestIndex][0]);
 					disparityArray.erase(disparityArray.begin() + largestIndex);
 				}
 
 				outputsM.setMajorDis(majorDis);
 
 				for (int width = 0; width < Left.cols; width++) {
-					int Z = width - outputsM.match(width, height);
+					int Z = width - outputsM.match(width, height)[0];
 					depthMap.at<Vec3b>(height, width)[0] = Z;
 					depthMap.at<Vec3b>(height, width)[1] = Z;
 					depthMap.at<Vec3b>(height, width)[2] = Z;
@@ -135,7 +147,6 @@ int main(int a) {
 
 			oss << "Result/" << inputName << "/Mode=ADM" << " pS1=" << sM.patchSize << " pS2=" << outputsM.patchSize << " wt=" << outputsM.weightOfDis << " dtL=" << detailLevel << " gSM1=" << sM.graySumMethod << " gSM2=" << outputsM.graySumMethod << ".png";
 		}
-
 
 		//RENDERING
 		float averageDis = (float)totalDis / (float)(Left.cols * Left.rows);
@@ -152,15 +163,26 @@ int main(int a) {
 				depthMap.at<Vec3b>(height, width)[2] = Z;
 			}
 		}
-
 		applyColorMap(depthMap, depthMap, COLORMAP_PLASMA);
-		medianBlur(depthMap, depthMap, 5);
-
-		imshow("result", depthMap);
-
+		//medianBlur(depthMap, depthMap, 5);
+		imshow("depthMap", depthMap);
 		std::string filePath = oss.str();
-
 		imwrite(filePath, depthMap);
+
+		float averageCost = (float)totalCost / (float)(Left.cols * Left.rows);
+		a = (float)128 / (float)(averageCost);
+		for (int width = 0; width < Left.cols; width++) {
+			for (int height = 0; height < Left.rows; height++) {
+				int C = costMap.at<Vec3b>(height, width)[0] * a;
+				if (C > 255) {
+					C = 255;
+				}
+				costMap.at<Vec3b>(height, width)[0] = C;
+				costMap.at<Vec3b>(height, width)[1] = C;
+				costMap.at<Vec3b>(height, width)[2] = C;
+			}
+		}
+		imshow("costMap", costMap);
 
 		/*
 			//DEBUGING PART

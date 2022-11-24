@@ -19,14 +19,14 @@ public:
 	int matchingMethod;
 	float weightOfDis;
 	float biasOfMinDis;
-	vector<int> majorDis;
+	vector<vector<int>> majorDis;
 	void setPatchSize(int inputPatchSize);
 	void setGraySumMethod(int inputgraySumMethod);
 	void setWeightOfDis(float inputWeightOfDis);
 	void setBiasOfMinDis(float inputBiasOfMinDis);
-	void setMajorDis(vector<int> inputMajorDis);
+	void setMajorDis(vector<vector<int>> inputMajorDis);
 	//Vec2f getSlopeAt(int patchSize, int j);
 	void inputGrayScale(vector<vector<int>> inputLeft, vector<vector<int>> inputRight);
 	void matchMethod(int methodIndex);
-	int match(int xPixel, int yPixel);
+	vector<int> match(int xPixel, int yPixel);
 };
