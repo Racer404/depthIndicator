@@ -12,10 +12,44 @@ Mat Right;
 Mat depthMap;
 Mat costMap;
 
+vector<int> getScanlineMajorDis(Mat referenceMap, int height, int detailLevel) {
+	vector<Vec2i> disparityArray;
+	for (int width = 0; width < Left.cols; width++) {
+		int Z = referenceMap.at<Vec3b>(height, width)[0];
+		bool ifDisExists = false;
+		for (int i = 0; i < disparityArray.size(); i++) {
+			if (Z == disparityArray[i][0]) {
+				disparityArray[i][1]++;
+				ifDisExists = true;
+				break;
+			}
+		}
+		if (!ifDisExists) {
+			disparityArray.push_back(Vec2i(Z, 0));
+		}
+	}
+
+	vector<int> majorDis;
+	for (int i = 0; i < detailLevel; i++) {
+		int largest = 0;
+		int largestIndex = 0;
+		for (int j = 0; j < disparityArray.size(); j++) {
+			if (disparityArray[j][1] > largest) {
+				largest = disparityArray[j][1];
+				largestIndex = j;
+			}
+		}
+		majorDis.push_back(disparityArray[largestIndex][0]);
+		disparityArray.erase(disparityArray.begin() + largestIndex);
+	}
+	return majorDis;
+}
+
 int main() {
 	String inputName = "Sculpture";
-	int method = 1;
+	int method = 3;
 	int detailLevel = 4;
+	int Yrefers = 5;
 	/*
 	vector<String> checkList;
 	checkList.push_back("Adirondack");
@@ -91,57 +125,54 @@ int main() {
 			sM.inputGrayScale(LeftGrayScale, RightGrayScale);
 			sM.setPatchSize(10);
 			sM.matchMethod(1);
-			sM.setGraySumMethod(3);
+			sM.setGraySumMethod(1);
+
+
+			Mat referenceMap = Mat(Left.rows, Left.cols, CV_8UC3, Scalar(0, 0, 0));
+
+			for (int width = 0; width < Left.cols; width++) {
+				for (int height = 0; height < Left.rows; height++) {
+					vector<int> p = sM.match(width, height);
+					int Z = width - p[0];
+					referenceMap.at<Vec3b>(height, width)[0] = Z;
+					referenceMap.at<Vec3b>(height, width)[1] = Z;
+					referenceMap.at<Vec3b>(height, width)[2] = Z;
+					totalDis = totalDis + Z;
+				}
+			}
 
 			stereoMatching outputsM;
 			outputsM.inputGrayScale(LeftGrayScale, RightGrayScale);
 			outputsM.setPatchSize(2);
 			outputsM.matchMethod(3);
-			outputsM.setGraySumMethod(3);
-			outputsM.setWeightOfDis(0.5);
+			outputsM.setGraySumMethod(1);
+			outputsM.setWeightOfDis(1);
 
 			for (int height = 0; height < Left.rows; height++) {
-
-				vector<Vec2i> disparityArray;
-				for (int width = 0; width < Left.cols; width++) {
-					int Z = width - sM.match(width, height)[0];
-					bool ifDisExists = false;
-					for (int i = 0; i < disparityArray.size(); i++) {
-						if (Z == disparityArray[i][0]) {
-							disparityArray[i][1]++;
-							ifDisExists = true;
-							break;
-						}
-					}
-					if (!ifDisExists) {
-						disparityArray.push_back(Vec2i(Z, 0));
+				vector<vector<int>> majorDisArray;
+				for (int yOffset = 0; yOffset < Yrefers; yOffset++) {
+					if ((height + yOffset) < Left.rows) {
+						majorDisArray.push_back(vector<int>());
+						majorDisArray[yOffset] = getScanlineMajorDis(referenceMap, height + yOffset, detailLevel);
 					}
 				}
-
-
-				vector<vector<int>> majorDis;
-				majorDis.push_back(vector<int>());
-				for (int i = 0; i < detailLevel; i++) {
-					int largest = 0;
-					int largestIndex = 0;
-					for (int j = 0; j < disparityArray.size(); j++) {
-						if (disparityArray[j][1] > largest) {
-							largest = disparityArray[j][1];
-							largestIndex = j;
-						}
-					}
-					majorDis[0].push_back(disparityArray[largestIndex][0]);
-					disparityArray.erase(disparityArray.begin() + largestIndex);
-				}
-
-				outputsM.setMajorDis(majorDis);
+				
+				outputsM.setMajorDis(majorDisArray);
 
 				for (int width = 0; width < Left.cols; width++) {
-					int Z = width - outputsM.match(width, height)[0];
+					vector<int> p = outputsM.match(width, height);
+					int Z = width - p[0];
 					depthMap.at<Vec3b>(height, width)[0] = Z;
 					depthMap.at<Vec3b>(height, width)[1] = Z;
 					depthMap.at<Vec3b>(height, width)[2] = Z;
+
+					int C = p[1];
+					costMap.at<Vec3b>(height, width)[0] = C;
+					costMap.at<Vec3b>(height, width)[1] = C;
+					costMap.at<Vec3b>(height, width)[2] = C;
+
 					totalDis = totalDis + Z;
+					totalCost = totalCost + C;
 				}
 			}
 
@@ -170,7 +201,7 @@ int main() {
 		imwrite(filePath, depthMap);
 
 		float averageCost = (float)totalCost / (float)(Left.cols * Left.rows);
-		a = (float)128 / (float)(averageCost);
+		a = 1;
 		for (int width = 0; width < Left.cols; width++) {
 			for (int height = 0; height < Left.rows; height++) {
 				int C = costMap.at<Vec3b>(height, width)[0] * a;
